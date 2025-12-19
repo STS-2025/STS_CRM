@@ -282,40 +282,7 @@ $reminders = [
     <!-- Activity Feed -->
     <div class="lg:col-span-1 bg-white rounded-xl shadow-lg p-6 border border-gray-100">
         <h2 class="text-xl font-semibold text-gray-800 mb-4">Recent Activity</h2>
-        <!--<ul class="space-y-3 text-sm h-64 overflow-y-auto pr-2">
-            <li class="border-b pb-2 text-gray-600 flex justify-between items-center">
-                <span><span class="font-medium text-gray-800">John Doe</span> closed deal <span class="text-green-600 font-semibold">#101</span></span>
-                <span class="text-xs text-gray-400">2h ago</span>
-            </li>
-            <li class="border-b pb-2 text-gray-600 flex justify-between items-center">
-                <span><span class="font-medium text-gray-800">System</span> updated 5 leads from website form.</span>
-                <span class="text-xs text-gray-400">5h ago</span>
-            </li>
-            <li class="border-b pb-2 text-gray-600 flex justify-between items-center">
-                <span><span class="font-medium text-gray-800">Jane Smith</span> scheduled a meeting with Acme Corp.</span>
-                <span class="text-xs text-gray-400">Yesterday</span>
-            </li>
-            <li class="border-b pb-2 text-gray-600 flex justify-between items-center">
-                <span><span class="font-medium text-gray-800">You</span> completed task "Follow up on Q3 report".</span>
-                <span class="text-xs text-gray-400">Yesterday</span>
-            </li>
-            <li class="text-gray-600 flex justify-between items-center">
-                <span><span class="font-medium text-gray-800">John Doe</span> added new contact: Sarah Connor.</span>
-                <span class="text-xs text-gray-400">3 days ago</span>
-            </li>
-             <li class="border-b pb-2 text-gray-600 flex justify-between items-center">
-                <span><span class="font-medium text-gray-800">System</span> updated 5 leads from website form.</span>
-                <span class="text-xs text-gray-400">5h ago</span>
-            </li>
-            <li class="border-b pb-2 text-gray-600 flex justify-between items-center">
-                <span><span class="font-medium text-gray-800">Jane Smith</span> scheduled a meeting with Acme Corp.</span>
-                <span class="text-xs text-gray-400">Yesterday</span>
-            </li>
-            <li class="border-b pb-2 text-gray-600 flex justify-between items-center">
-                <span><span class="font-medium text-gray-800">You</span> completed task "Follow up on Q3 report".</span>
-                <span class="text-xs text-gray-400">Yesterday</span>
-            </li>
-        </ul>-->
+        
         <ul class="space-y-3 text-sm h-64 overflow-y-auto pr-2">
             <?php foreach ($new_leads_today as $item): ?>
                 <li class="border-b pb-2 text-gray-600 flex justify-between items-center">
