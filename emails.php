@@ -6,13 +6,18 @@ session_start();
 $page_title = "Email Inbox";
 include 'api/db.php'; 
 
+$user_id = $_SESSION['user_id'];
+$role = $_SESSION['role'];
 // Fetch all emails joined with lead info
 $sql = "
     SELECT e.*, l.id as lead_id, l.name as lead_name 
     FROM crm_emails e 
-    LEFT JOIN leads l ON e.sender_email = l.email 
-    ORDER BY e.received_at DESC
-";
+    INNER JOIN leads l ON e.sender_email = l.email ";
+if ($role !== 'admin') {
+    $sql .= " WHERE l.owner_id = $user_id ";
+}
+
+$sql .= " ORDER BY e.received_at DESC";
 $result = $conn->query($sql);
 ?>
 

@@ -133,6 +133,13 @@ $status_class = match ($lead['status']) {
                 <?php endif; ?>
             </div>
         </div>
+        <div class="space-y-1">
+            <h2 class="text-xl font-semibold text-gray-800 border-b pb-2 mb-4">Conversations</h2>
+                <div>
+                    <p class="text-sm font-medium text-gray-500">Remarks</p>
+                    <p class="text-base text-gray-900 whitespace-pre-wrap"><?= nl2br(htmlspecialchars($lead['remarks'] ?: 'No remarks added.')) ?></p>
+                </div>
+        </div>
 
     </div>
     

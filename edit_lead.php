@@ -31,6 +31,9 @@ if (!$lead) {
     exit();
 }
 
+// Existing lead sources-ai fetch panrom suggestions-kaga
+$sources_result = $conn->query("SELECT DISTINCT source FROM leads WHERE source IS NOT NULL AND source != '' ORDER BY source ASC");
+$existing_sources = $sources_result ? $sources_result->fetch_all(MYSQLI_ASSOC) : [];
 // Fetch users for the owner dropdown
 $users_result = $conn->query("SELECT id, name FROM users WHERE role != 'admin' ORDER BY name ASC");
 $users = $users_result ? $users_result->fetch_all(MYSQLI_ASSOC) : [];
@@ -42,7 +45,7 @@ $campaigns = $campaigns_result ? $campaigns_result->fetch_all(MYSQLI_ASSOC) : []
 $conn->close();
 
 $statuses = ['New', 'Attempted', 'Contacted', 'Qualified', 'Unqualified', 'Converted'];
-$sources = ['Website', 'Referral', 'Campaign', 'Trade Show', 'Other'];
+
 ?>
 
 <div class="flex justify-between items-start mb-6">
@@ -105,14 +108,17 @@ $sources = ['Website', 'Referral', 'Campaign', 'Trade Show', 'Other'];
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
                 <label for="source" class="text-sm font-medium text-gray-700 block">Lead Source</label>
-                <select id="source" name="source" required
+
+                <input type="text" id="source" name="source" required list="source_list"
+                    value="<?= htmlspecialchars($lead['source']) ?>" placeholder="Type or select a source"
                     class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
-                    <?php foreach ($sources as $s): ?>
-                        <option value="<?= $s ?>" <?= ($s == $lead['source'] ? 'selected' : '') ?>>
-                            <?= $s ?>
-                        </option>
-                    <?php endforeach; ?>
-                </select>
+
+                <datalist id="source_list">
+                    <?php foreach ($existing_sources as $s): ?>
+                        <option value="<?= htmlspecialchars($s['source']) ?>">
+                        <?php endforeach; ?>
+                </datalist>
+                <p class="mt-1 text-xs text-gray-400 italic">Modify the source or start typing for suggestions.</p>
             </div>
 
             <div>

@@ -119,9 +119,11 @@ function get_active_class($page_file, $current) {
                 </a>
             </li>
             <li>
-                <a href="users.php" class="<?php echo get_active_class('users.php', $current_page); ?>">
-                    <i data-lucide="user-circle" class="w-5 h-5"></i> <span>Users & Teams</span>
-                </a>
+                <?php if (isset($_SESSION['role']) && $_SESSION['role'] === 'admin'): ?>
+                    <a href="users.php" class="<?php echo get_active_class('users.php', $current_page); ?>">
+                        <i data-lucide="user-circle" class="w-5 h-5"></i> <span>Users & Teams</span>
+                    </a>
+                <?php endif; ?>
             </li>
             <li>
                 <a href="<?= $settings_page ?>" class="<?php echo get_active_class($settings_page, $current_page); ?>">
