@@ -62,13 +62,13 @@ function get_active_class($page_file, $current) {
         <h3 class="text-xs uppercase tracking-wider font-bold text-gray-400 px-2 mt-4">Sales</h3>
         <ul class="space-y-1">
             <li>
-                <a href="contacts.php" class="<?php echo get_active_class('contacts.php', $current_page); ?>">
-                    <i data-lucide="contact" class="w-5 h-5"></i> <span>Contacts</span>
+                <a href="companies.php" class="<?php echo get_active_class('companies.php', $current_page); ?>">
+                    <i data-lucide="building-2" class="w-5 h-5"></i> <span>Companies</span>
                 </a>
             </li>
             <li>
-                <a href="companies.php" class="<?php echo get_active_class('companies.php', $current_page); ?>">
-                    <i data-lucide="building-2" class="w-5 h-5"></i> <span>Companies</span>
+                <a href="contacts.php" class="<?php echo get_active_class('contacts.php', $current_page); ?>">
+                    <i data-lucide="contact" class="w-5 h-5"></i> <span>Contacts</span>
                 </a>
             </li>
             <li>
