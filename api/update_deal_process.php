@@ -18,6 +18,7 @@ if (!isset($_POST['deal_id'], $_POST['deal_name'], $_POST['amount'], $_POST['sta
 $deal_id = (int)$_POST['deal_id'];
 $deal_name = $_POST['deal_name'];
 $amount = (float)$_POST['amount'];
+$opening_date = $_POST['opening_date'];
 $stage = $_POST['stage'];
 $company_id = (int)$_POST['company_id'];
 $owner_id = (int)$_POST['owner_id'];
@@ -34,12 +35,12 @@ if ($deal_id <= 0 || empty($deal_name) || $company_id <= 0 || $owner_id <= 0) {
 // 2. Prepare SQL statement for updating
 $stmt = $conn->prepare("
     UPDATE deals 
-    SET deal_name = ?, amount = ?, stage = ?, company_id = ?, owner_id = ?, close_date = ?, updated_at = NOW() 
+    SET deal_name = ?, amount = ?, stage = ?, company_id = ?, owner_id = ?, opening_date = ?, close_date = ?, updated_at = NOW() 
     WHERE id = ?
 ");
 
 // Bind parameters: s (name), d (amount), s (stage), i (company_id), i (owner_id), s (close_date), i (deal_id)
-$stmt->bind_param("sdsiisi", $deal_name, $amount, $stage, $company_id, $owner_id, $close_date, $deal_id);
+$stmt->bind_param("sdsiissi", $deal_name, $amount, $stage, $company_id, $owner_id, $opening_date, $close_date, $deal_id);
 
 
 // 3. Execute and redirect

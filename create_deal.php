@@ -53,7 +53,7 @@ $conn->close();
             </div>
             <div>
                 <label for="amount" class="text-sm font-medium text-gray-700 block">Deal Amount (₹)</label>
-                <input type="number" id="amount" name="amount" step="0.01" required
+                <input type="number" id="amount" name="amount" step="0.01" 
                        class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:ring-blue-500 focus:border-blue-500 sm:text-sm" placeholder="15000.00">
             </div>
         </div>

@@ -71,7 +71,7 @@ $pipeline_stages = ['New', 'Qualification', 'Proposal Sent', 'Negotiation', 'Clo
                        class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
             </div>
             <div>
-                <label for="amount" class="text-sm font-medium text-gray-700 block">Deal Amount ($)</label>
+                <label for="amount" class="text-sm font-medium text-gray-700 block">Deal Amount (₹)</label>
                 <input type="number" id="amount" name="amount" step="0.01" required
                        value="<?= htmlspecialchars($deal['amount']) ?>"
                        class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
@@ -93,10 +93,10 @@ $pipeline_stages = ['New', 'Qualification', 'Proposal Sent', 'Negotiation', 'Clo
                 </select>
             </div>
             <div>
-                <label for="owner_id" class="text-sm font-medium text-gray-700 block">Deal Owner</label>
+                <label for="owner_id" class="text-sm font-medium text-gray-700 block">Deal Incharge</label>
                 <select id="owner_id" name="owner_id" required
                         class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
-                    <option value="">-- Select Owner --</option>
+                    <option value="">-- Select Incharge --</option>
                     <?php 
                     foreach($users as $u) {
                         $selected = ($u['id'] == $deal['owner_id']) ? 'selected' : '';
@@ -108,25 +108,39 @@ $pipeline_stages = ['New', 'Qualification', 'Proposal Sent', 'Negotiation', 'Clo
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-                <label for="stage" class="text-sm font-medium text-gray-700 block">Pipeline Stage</label>
-                <select id="stage" name="stage" required
-                         class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
-                    <?php 
-                    foreach($pipeline_stages as $stage_option) {
-                        $selected = ($stage_option === $deal['stage']) ? 'selected' : '';
-                        echo "<option value=\"$stage_option\" $selected>$stage_option</option>";
-                    }
-                    ?>
-                </select>
-            </div>
-            <div>
-                <label for="close_date" class="text-sm font-medium text-gray-700 block">Expected Close Date</label>
-                <input type="date" id="close_date" name="close_date"
-                       value="<?= htmlspecialchars($deal['close_date'] ?? '') ?>"
-                       class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
-            </div>
-        </div>
+    <!-- Opening Date -->
+    <div>
+        <label for="opening_date" class="text-sm font-medium text-gray-700 block">Opening Date</label>
+        <input type="date" id="opening_date" name="opening_date" required
+               value="<?= htmlspecialchars($deal['opening_date']) ?>"
+               class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+    </div>
+
+    <!-- Expected Close Date -->
+    <div>
+        <label for="close_date" class="text-sm font-medium text-gray-700 block">Expected Close Date</label>
+        <input type="date" id="close_date" name="close_date"
+               value="<?= htmlspecialchars($deal['close_date'] ?? '') ?>"
+               class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+    </div>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <!-- Pipeline Stage -->
+    <div>
+        <label for="stage" class="text-sm font-medium text-gray-700 block">Pipeline Stage</label>
+        <select id="stage" name="stage" required
+                 class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+            <?php 
+            foreach ($pipeline_stages as $stage_option) {
+                $selected = ($stage_option === $deal['stage']) ? 'selected' : '';
+                echo "<option value=\"$stage_option\" $selected>$stage_option</option>";
+            }
+            ?>
+        </select>
+    </div>
+</div>
+
 
         <div class="pt-5 border-t border-gray-200 mt-8">
             <div class="flex justify-between items-center">

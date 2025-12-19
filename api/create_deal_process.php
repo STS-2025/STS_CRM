@@ -14,6 +14,7 @@ if (!isset($_POST['deal_name'], $_POST['amount'], $_POST['stage'], $_POST['compa
 // 1. Get and sanitize form data
 $deal_name = $_POST['deal_name'];
 $amount = (float)$_POST['amount'];
+$opening_date  = $_POST['opening_date'];
 $stage = $_POST['stage'];
 $company_id = (int)$_POST['company_id'];
 $owner_id = (int)$_POST['owner_id'];
@@ -22,13 +23,13 @@ $close_date = empty($_POST['close_date']) ? NULL : $_POST['close_date'];
 // 2. Prepare SQL statement for insertion
 $stmt = $conn->prepare("
     INSERT INTO deals 
-    (deal_name, amount, stage, company_id, owner_id, close_date) 
-    VALUES (?, ?, ?, ?, ?, ?)
+    (deal_name, amount, opening_date, stage, company_id, owner_id, close_date) 
+    VALUES (?, ?, ?, ?, ?, ?, ?)
 ");
 
 // Bind parameters: s(name), d(amount), s(stage), i(company_id), i(owner_id), s(close_date or NULL)
 // Use 's' for close_date because it's a string representation of a date or NULL.
-$stmt->bind_param("sdsiis", $deal_name, $amount, $stage, $company_id, $owner_id, $close_date);
+$stmt->bind_param("sdssiis", $deal_name, $amount, $opening_date, $stage, $company_id, $owner_id, $close_date);
 
 // 3. Execute and redirect
 if ($stmt->execute()) {
