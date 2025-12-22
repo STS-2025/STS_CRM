@@ -241,6 +241,7 @@ $reminders = [
 
 <div class="flex justify-between items-center mb-6">
     <h1 class="text-3xl font-bold text-gray-800">Dashboard</h1>
+    <div>
     <button
         class="px-4 py-2 text-sm font-medium rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition duration-150 shadow-lg shadow-blue-500/50">
         <i data-lucide="download" class="w-4 h-4 inline mr-1"></i> Export Report
@@ -248,6 +249,7 @@ $reminders = [
     <button onclick="openEmailModal()" class="px-4 py-2 text-sm font-medium rounded-lg bg-green-600 hover:bg-green-700 text-white transition duration-150 shadow-lg">
         <i data-lucide="mail" class="w-4 h-4 inline mr-1"></i> Compose Email
     </button>
+    </div>
 </div>
 
 <section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -274,40 +276,6 @@ $reminders = [
     <!-- Activity Feed -->
     <div class="lg:col-span-1 bg-white rounded-xl shadow-lg p-6 border border-gray-100">
         <h2 class="text-xl font-semibold text-gray-800 mb-4">Recent Activity</h2>
-        <!--<ul class="space-y-3 text-sm h-64 overflow-y-auto pr-2">
-            <li class="border-b pb-2 text-gray-600 flex justify-between items-center">
-                <span><span class="font-medium text-gray-800">John Doe</span> closed deal <span class="text-green-600 font-semibold">#101</span></span>
-                <span class="text-xs text-gray-400">2h ago</span>
-            </li>
-            <li class="border-b pb-2 text-gray-600 flex justify-between items-center">
-                <span><span class="font-medium text-gray-800">System</span> updated 5 leads from website form.</span>
-                <span class="text-xs text-gray-400">5h ago</span>
-            </li>
-            <li class="border-b pb-2 text-gray-600 flex justify-between items-center">
-                <span><span class="font-medium text-gray-800">Jane Smith</span> scheduled a meeting with Acme Corp.</span>
-                <span class="text-xs text-gray-400">Yesterday</span>
-            </li>
-            <li class="border-b pb-2 text-gray-600 flex justify-between items-center">
-                <span><span class="font-medium text-gray-800">You</span> completed task "Follow up on Q3 report".</span>
-                <span class="text-xs text-gray-400">Yesterday</span>
-            </li>
-            <li class="text-gray-600 flex justify-between items-center">
-                <span><span class="font-medium text-gray-800">John Doe</span> added new contact: Sarah Connor.</span>
-                <span class="text-xs text-gray-400">3 days ago</span>
-            </li>
-             <li class="border-b pb-2 text-gray-600 flex justify-between items-center">
-                <span><span class="font-medium text-gray-800">System</span> updated 5 leads from website form.</span>
-                <span class="text-xs text-gray-400">5h ago</span>
-            </li>
-            <li class="border-b pb-2 text-gray-600 flex justify-between items-center">
-                <span><span class="font-medium text-gray-800">Jane Smith</span> scheduled a meeting with Acme Corp.</span>
-                <span class="text-xs text-gray-400">Yesterday</span>
-            </li>
-            <li class="border-b pb-2 text-gray-600 flex justify-between items-center">
-                <span><span class="font-medium text-gray-800">You</span> completed task "Follow up on Q3 report".</span>
-                <span class="text-xs text-gray-400">Yesterday</span>
-            </li>
-        </ul>-->
         <ul class="space-y-3 text-sm h-64 overflow-y-auto pr-2">
             <?php foreach ($new_leads_today as $item): ?>
                 <li class="border-b pb-2 text-gray-600 flex justify-between items-center">
@@ -351,6 +319,44 @@ $reminders = [
         </ul>
     </div>
 </section>
+<div id="emailModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-[60] flex items-center justify-center">
+    <div class="bg-white rounded-xl p-6 w-full max-w-md shadow-2xl">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-bold text-gray-800">Compose Email</h2>
+            <button onclick="closeEmailModal()" class="text-gray-400 hover:text-gray-600">
+                <i data-lucide="x" class="w-6 h-6"></i>
+            </button>
+        </div>
+        <form id="emailForm">
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700">To Email</label>
+                <input type="email" name="to_email"
+                    class="w-full border rounded-lg p-2 mt-1 focus:ring-2 focus:ring-blue-500"
+                    placeholder="recipient@example.com" required>
+            </div>
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700">Subject</label>
+                <input type="text" name="subject"
+                    class="w-full border rounded-lg p-2 mt-1 focus:ring-2 focus:ring-blue-500"
+                    placeholder="Enter subject" required>
+            </div>
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700">Message</label>
+                <textarea name="message" rows="4"
+                    class="w-full border rounded-lg p-2 mt-1 focus:ring-2 focus:ring-blue-500"
+                    placeholder="Type your message here..." required></textarea>
+            </div>
+            <div class="flex justify-end gap-3">
+                <button type="button" onclick="closeEmailModal()"
+                    class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg">Cancel</button>
+                <button type="submit"
+                    class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 shadow-lg flex items-center gap-2">
+                    <i data-lucide="send" class="w-4 h-4"></i> Send Now
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
 <?php if (!empty($reminders)): ?>
     <div id="reminder-popup" class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
         <!-- Audio -->
@@ -408,17 +414,7 @@ $reminders = [
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-    document.addEventListener("DOMContentLoaded", function () {
-        const popup = document.getElementById('reminder-popup');
-        if (popup) {
-            const audio = document.getElementById('reminder-sound');
-            if (audio) {
-                audio.play().catch(e => console.log("Autoplay blocked:", e));
-            }
-        }
-
-        // --- BACKGROUND EMAIL SYNC (AJAX) ---
-        function startEmailSync() {
+function startEmailSync() {
             console.log("Background Email Sync Started...");
 
             // api folder-kulla irukka sync_emails.php-ah call panrom
@@ -431,12 +427,53 @@ $reminders = [
                     console.error('Sync Error:', error);
                 });
         }
+        
+        function openEmailModal() {
+            const modal = document.getElementById('emailModal');
+            if (modal) modal.classList.remove('hidden');
+        }
 
-        // 1. Dashboard load aagumbothu oru vaati trigger aagum
-        startEmailSync();
+        function closeEmailModal() {
+            const modal = document.getElementById('emailModal');
+            if (modal) modal.classList.add('hidden');
+        }
+    document.addEventListener("DOMContentLoaded", function () {
+        const popup = document.getElementById('reminder-popup');
+        if (popup) {
+            const audio = document.getElementById('reminder-sound');
+            if (audio) {
+                audio.play().catch(e => console.log("Autoplay blocked:", e));
+            }
+        }
+        
 
-        // 2. Ovvoru 5 nimishathukkum automatic-ah background-la run aagum (300,000 ms)
-        setInterval(startEmailSync, 300000);
+        // Handle Form Submission
+        document.getElementById('emailForm').addEventListener('submit', function (e) {
+            e.preventDefault();
+            const btn = e.target.querySelector('button[type="submit"]');
+            btn.innerText = "Sending...";
+            btn.disabled = true;
+
+            const formData = new FormData(this);
+            fetch('api/send_email.php', {
+                method: 'POST',
+                body: formData
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        alert('Email success-ah anuppiyaachu!');
+                        closeEmailModal();
+                        this.reset();
+                    } else {
+                        alert('Error: ' + data.message);
+                    }
+                })
+                .finally(() => {
+                    btn.innerText = "Send Now";
+                    btn.disabled = false;
+                });
+        });
 
         const ctx = document.getElementById('salesPipelineChart').getContext('2d');
         if (ctx) {

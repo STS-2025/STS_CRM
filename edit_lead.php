@@ -7,6 +7,14 @@ session_start();
 $page_title = "Edit Lead";
 include 'api/db.php';
 
+if (!isset($_SESSION['user_id'])) {
+    header("Location: login.php");
+    exit;
+}
+
+$current_user_id = $_SESSION['user_id'];
+$current_user_role = $_SESSION['role'];
+
 // --- 1. Fetch Lead ID and Validation ---
 $lead_id = isset($_GET['id']) ? (int) $_GET['id'] : 0;
 
@@ -31,13 +39,26 @@ if (!$lead) {
     exit();
 }
 
+if ($current_user_role !== 'admin' && $lead['owner_id'] != $current_user_id) {
+    $_SESSION['message'] = "Error: You do not have permission to edit this lead.";
+    header('Location: leads.php');
+    exit();
+}
+
 // Existing lead sources-ai fetch panrom suggestions-kaga
-$sources_result = $conn->query("SELECT DISTINCT source FROM leads WHERE source IS NOT NULL AND source != '' ORDER BY source ASC");
+$sources_result = $conn->query("SELECT source FROM leads WHERE source IS NOT NULL AND source != '' GROUP BY TRIM(LOWER(source)) ORDER BY source ASC");
 $existing_sources = $sources_result ? $sources_result->fetch_all(MYSQLI_ASSOC) : [];
 // Fetch users for the owner dropdown
-$users_result = $conn->query("SELECT id, name FROM users WHERE role != 'admin' ORDER BY name ASC");
+if ($current_user_role === 'admin') {
+    $users_result = $conn->query("SELECT id, name FROM users WHERE role != 'admin' ORDER BY name ASC");
+} else {
+    // Staff-ku avanga name mattumae dropdown-la theriyum
+    $stmt_u = $conn->prepare("SELECT id, name FROM users WHERE id = ?");
+    $stmt_u->bind_param("i", $current_user_id);
+    $stmt_u->execute();
+    $users_result = $stmt_u->get_result();
+}
 $users = $users_result ? $users_result->fetch_all(MYSQLI_ASSOC) : [];
-
 // Fetch Active/Planned Campaigns for source tracking
 $campaigns_result = $conn->query("SELECT id, name FROM campaigns WHERE status IN ('Planned', 'Running', 'Completed') ORDER BY name ASC");
 $campaigns = $campaigns_result ? $campaigns_result->fetch_all(MYSQLI_ASSOC) : [];
@@ -116,7 +137,7 @@ $statuses = ['New', 'Attempted', 'Contacted', 'Qualified', 'Unqualified', 'Conve
                 <datalist id="source_list">
                     <?php foreach ($existing_sources as $s): ?>
                         <option value="<?= htmlspecialchars($s['source']) ?>">
-                        <?php endforeach; ?>
+                    <?php endforeach; ?>
                 </datalist>
                 <p class="mt-1 text-xs text-gray-400 italic">Modify the source or start typing for suggestions.</p>
             </div>
@@ -132,6 +153,9 @@ $statuses = ['New', 'Attempted', 'Contacted', 'Qualified', 'Unqualified', 'Conve
                         </option>
                     <?php endforeach; ?>
                 </select>
+                <?php if ($current_user_role !== 'admin'): ?>
+                    <p class="mt-1 text-xs text-gray-400 italic">Only admins can reassign lead owners.</p>
+                <?php endif; ?>
             </div>
         </div>
 

@@ -24,13 +24,7 @@ $count_result = $conn->query($count_sql);
 $total_companies = $count_result->fetch_assoc()['total'];
 $total_pages = ceil($total_companies / $limit);
 // ------------------------
-$delete_button = '';
-        if (isset($_SESSION['role']) && $_SESSION['role'] === 'admin') {
-            $delete_button = '
-            <a href="javascript:void(0);" 
-            onclick="deleteContact(' . (int)$id . ')" 
-            class="text-red-600 hover:text-red-900">Delete</a>';
-        }
+
 // 4. DATA FETCHING LOGIC (Paginated)
 $company_rows_html = '';
 
@@ -46,6 +40,13 @@ if ($result && $result->num_rows > 0) {
     while($row = $result->fetch_assoc()) {
         $activity_display = $row['latest_activity'] ? date('M d, Y', strtotime($row['latest_activity'])) : 'N/A';
         
+        $delete_button = '';
+        if (isset($_SESSION['role']) && $_SESSION['role'] === 'admin') {
+            $delete_button = '
+            <a href="javascript:void(0);" 
+            onclick="deleteCompanies(' . (int)$row['id'] . ')" 
+            class="text-red-600 hover:text-red-900">Delete</a>';
+        }
         $company_rows_html .= '
             <tr class="hover:bg-gray-50 transition duration-150">
                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600 hover:text-blue-800 cursor-pointer">' . htmlspecialchars($row['name']) . '</td>
@@ -158,9 +159,9 @@ if (isset($_SESSION['message'])) {
 </div>
 
 <script>
-function deleteCompany(companyId) {
+function deleteCompanies(companyId) {
     if (confirm("Are you sure you want to delete this company?")) {
-        window.location.href = 'api/delete_company.php?id=' + companyId;
+        window.location.href = 'api/delete_companies.php?id=' + companyId;
     }
 }
 

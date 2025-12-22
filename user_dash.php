@@ -248,6 +248,7 @@ $reminders = [
 
 <div class="flex justify-between items-center mb-6">
     <h1 class="text-3xl font-bold text-gray-800">Dashboard</h1>
+    <div>
     <button
         class="px-4 py-2 text-sm font-medium rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition duration-150 shadow-lg shadow-blue-500/50">
         <i data-lucide="download" class="w-4 h-4 inline mr-1"></i> Export Report
@@ -256,6 +257,7 @@ $reminders = [
         class="px-4 py-2 text-sm font-medium rounded-lg bg-green-600 hover:bg-green-700 text-white transition duration-150 shadow-lg">
         <i data-lucide="mail" class="w-4 h-4 inline mr-1"></i> Compose Email
     </button>
+    </div>
 </div>
 
 <section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">

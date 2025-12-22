@@ -1,26 +1,39 @@
 <?php 
-// deals.php
+// deals.php (Role-Based Kanban Pipeline)
 
-// 1. Start output buffering and session
 ob_start(); 
 session_start();
 
-// 2. Set the specific page title for the layout
 $page_title = "Deals Pipeline";
-
-// 3. Include necessary files and database connection
-// include 'includes/auth_check.php'; 
 include 'api/db.php'; 
 
-// Define the official pipeline stages (must match what's used in create_deal.php)
-$pipeline_stages = ['New', 'Qualification', 'Proposal Sent', 'Negotiation', 'Closed Won', 'Closed Lost'];
+// Auth Check
+if (!isset($_SESSION['user_id'])) {
+    header("Location: login.php");
+    exit;
+}
 
-// Initialize arrays to store deals grouped by stage and column totals
+$current_user_id = $_SESSION['user_id'];
+$current_user_role = $_SESSION['role'];
+
+// Define pipeline stages
+$pipeline_stages = ['New', 'Qualification', 'Proposal Sent', 'Negotiation', 'Closed Won', 'Closed Lost'];
 $stage_deals = array_fill_keys($pipeline_stages, '');
 $stage_counts = array_fill_keys($pipeline_stages, 0);
 
-// --- 4. DATA FETCHING LOGIC ---
-// Fetch all deals, joining with companies and users to get names
+// --- 4. DATA FETCHING LOGIC (With Security Filter) ---
+
+$where_clause = "";
+$params = [];
+$types = "";
+
+// Admin illaiyendral, owner_id-ai vaitthu filter seiyavum
+if ($current_user_role !== 'admin') {
+    $where_clause = " WHERE d.owner_id = ?";
+    $params[] = $current_user_id;
+    $types = "i";
+}
+
 $sql = "
     SELECT 
         d.id, d.deal_name, d.amount, d.stage, d.close_date,
@@ -29,93 +42,85 @@ $sql = "
     FROM deals d
     LEFT JOIN companies c ON d.company_id = c.id
     LEFT JOIN users u ON d.owner_id = u.id
+    $where_clause
     ORDER BY d.amount DESC
 ";
 
-$result = $conn->query($sql);
+$stmt = $conn->prepare($sql);
+if ($current_user_role !== 'admin') {
+    $stmt->bind_param($types, ...$params);
+}
+$stmt->execute();
+$result = $stmt->get_result();
 
 if ($result && $result->num_rows > 0) {
     while($deal = $result->fetch_assoc()) {
         $deal_stage = $deal['stage'];
         $deal_amount_formatted = '₹' . number_format($deal['amount'], 2);
         
-        // Ensure the stage exists in our defined pipeline before adding
-        if (in_array($deal_stage, $pipeline_stages)) {
+        if (isset($stage_deals[$deal_stage])) {
             $stage_deals[$deal_stage] .= generate_deal_card(
                 $deal['id'],
                 $deal['deal_name'], 
                 $deal_amount_formatted, 
-                $deal['company_name'] ?? 'N/A', // Use N/A if company is NULL
-                $deal['owner_name'] ?? 'N/A'     // Use N/A if owner is NULL
+                $deal['company_name'] ?? 'N/A', 
+                $deal['owner_name'] ?? 'N/A'
             );
             $stage_counts[$deal_stage]++;
         }
     }
 }
+$stmt->close();
 $conn->close();
 
 /**
- * Helper function to generate a Deal Card within the Kanban board
+ * Helper function to generate a Deal Card
  */
 function generate_deal_card($deal_id, $deal_name, $amount, $company, $owner) {
-    // Choose a random color for the deal card border for visual variety
-    $colors = ['border-blue-500', 'border-green-500', 'border-yellow-500', 'border-red-500'];
-    $border_color = $colors[array_rand($colors)];
+    $colors = ['border-blue-500', 'border-green-500', 'border-yellow-500', 'border-purple-500'];
+    $border_color = $colors[$deal_id % 4]; // Consistent color per deal ID
 
     return '
         <div class="deal-card bg-white p-4 rounded-lg shadow-sm border-t-4 ' . $border_color . ' mb-4 cursor-grab hover:shadow-md transition duration-150" 
-             data-deal-id="' . $deal_id . '" data-stage="' . htmlspecialchars($deal_name) . '" draggable="true">
-            <h4 class="text-sm font-semibold text-gray-900">' . htmlspecialchars($deal_name) . '</h4>
-            <p class="text-xl font-bold text-gray-800 mt-1">' . htmlspecialchars($amount) . '</p>
-            <p class="text-xs text-gray-500 mt-2">Company: ' . htmlspecialchars($company) . '</p>
+             data-deal-id="' . $deal_id . '" draggable="true">
+            <h4 class="text-sm font-semibold text-gray-900 truncate">' . htmlspecialchars($deal_name) . '</h4>
+            <p class="text-lg font-bold text-gray-800 mt-1">' . htmlspecialchars($amount) . '</p>
+            <p class="text-[10px] text-gray-500 mt-2 uppercase tracking-tight">Company: ' . htmlspecialchars($company) . '</p>
             <div class="mt-3 pt-3 border-t border-gray-100 flex justify-between items-center">
-                <span class="text-xs text-gray-600">Owner: ' . htmlspecialchars($owner) . '</span>
-                <a href="edit_deal.php?id=' . $deal_id . '" class="text-gray-400 hover:text-blue-600 transition">
-                    <i data-lucide="ellipsis-vertical" class="w-4 h-4"></i>
+                <span class="text-[10px] text-gray-400">Owner: ' . htmlspecialchars($owner) . '</span>
+                <a href="edit_deal.php?id=' . $deal_id . '" class="text-gray-400 hover:text-blue-600">
+                    <i data-lucide="edit-3" class="w-3 h-3"></i>
                 </a>
             </div>
-        </div>
-    ';
+        </div>';
 }
 
 /**
- * Helper function to generate a Kanban Column (Stage)
+ * Helper function to generate a Kanban Column
  */
 function generate_pipeline_column($title, $deals, $count) {
-    // Use stage title for the column ID (e.g., "Proposal Sent" -> "proposal-sent")
     $column_id = strtolower(str_replace(' ', '-', $title));
     return '
-        <div class="w-full lg:w-1/5 flex-shrink-0">
-            <div class="bg-gray-100 p-3 rounded-xl shadow-inner h-full flex flex-col">
-                <div class="flex justify-between items-center mb-4 pb-2 border-b border-gray-200">
-                    <h3 class="text-sm font-bold text-gray-700 uppercase tracking-wider">' . htmlspecialchars($title) . '</h3>
-                    <span class="text-xs font-semibold bg-gray-300 text-gray-700 px-2 py-1 rounded-full">' . $count . '</span>
+        <div class="w-80 flex-shrink-0">
+            <div class="bg-gray-100 p-3 rounded-xl h-full flex flex-col border border-gray-200">
+                <div class="flex justify-between items-center mb-4 px-1">
+                    <h3 class="text-xs font-bold text-gray-500 uppercase tracking-widest">' . htmlspecialchars($title) . '</h3>
+                    <span class="text-xs font-bold bg-white border border-gray-300 text-gray-600 px-2 py-0.5 rounded-full shadow-sm">' . $count . '</span>
                 </div>
-                
-                <div id="' . $column_id . '" class="pipeline-stage min-h-8 space-y-3 pb-2 flex-grow overflow-y-auto" data-stage="' . htmlspecialchars($title) . '">
-                    ' . $deals . '
+                <div id="' . $column_id . '" class="pipeline-stage flex-grow min-h-[50px] space-y-3 overflow-y-auto" data-stage="' . htmlspecialchars($title) . '">
+                    ' . ($deals ?: '<div class="text-center py-10 text-gray-400 text-xs italic">No deals</div>') . '
                 </div>
-                
-                <a href="create_deal.php?stage=' . urlencode($title) . '" class="w-full mt-4 text-xs py-2 text-gray-500 hover:text-blue-600 transition block text-center border-t border-gray-200 pt-3">
-                    <i data-lucide="plus" class="w-3 h-3 inline mr-1"></i> Add deal
+                <a href="create_deal.php?stage=' . urlencode($title) . '" class="mt-4 text-center py-2 text-xs text-gray-400 hover:text-blue-600 hover:bg-white rounded-lg transition border border-dashed border-gray-300">
+                    + Add Deal
                 </a>
             </div>
-        </div>
-    ';
+        </div>';
 }
 
-// Check for and store session message before outputting HTML
-$toast_message = '';
-$toast_type = 'success'; // Default type
-if (isset($_SESSION['message'])) {
-    $toast_message = $_SESSION['message'];
-    // Simple check to determine if it's an error message
-    if (str_contains($toast_message, 'Error') || str_contains($toast_message, 'Database Error')) {
-        $toast_type = 'error';
-    }
-    unset($_SESSION['message']); // Clear the message after retrieval
-}
-
+// Toast logic...
+$toast_message = $_SESSION['message'] ?? '';
+$toast_type = (isset($_SESSION['message']) && (str_contains($_SESSION['message'], 'Error'))) ? 'error' : 'success';
+unset($_SESSION['message']);
 ?>
 
 <div id="toast-message" aria-live="polite" aria-atomic="true" class="hidden fixed top-4 right-4 z-50 w-full max-w-xs">

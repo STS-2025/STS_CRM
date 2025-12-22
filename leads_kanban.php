@@ -7,30 +7,50 @@ session_start();
 $page_title = "Leads Kanban Board";
 include 'api/db.php'; 
 
-// --- 1. Filter Logic Setup ---
+// Auth Check
+if (!isset($_SESSION['user_id'])) {
+    header("Location: login.php");
+    exit;
+}
+
+$current_user_id = $_SESSION['user_id'];
+$current_user_role = $_SESSION['role'];
+
+// --- 1. Filter & Role Logic Setup ---
 $filter_campaign_id = isset($_GET['campaign_id']) ? (int)$_GET['campaign_id'] : 0;
-$where_clause = "";
+$filter_display_name = ($current_user_role === 'admin') ? "All Leads" : "My Leads";
+$view_query_string = ""; 
+
+$where_conditions = [];
 $bind_types = "";
 $bind_params = [];
-$filter_display_name = "All Leads";
-$view_query_string = ""; // Used for links back to the list view
 
+// Requirement: User role based filtering
+if ($current_user_role !== 'admin') {
+    $where_conditions[] = "l.owner_id = ?";
+    $bind_types .= "i";
+    $bind_params[] = $current_user_id;
+}
+
+// Campaign Filter Logic
 if ($filter_campaign_id > 0) {
-    // Get Campaign Name for header display
     $camp_stmt = $conn->prepare("SELECT name FROM campaigns WHERE id = ?");
     $camp_stmt->bind_param("i", $filter_campaign_id);
     $camp_stmt->execute();
     $camp_result = $camp_stmt->get_result()->fetch_assoc();
-    $filter_display_name = "Campaign: " . htmlspecialchars($camp_result['name'] ?? 'Unknown');
-    $camp_stmt->close();
     
-    // Set up SQL filter
-    $where_clause = " WHERE l.campaign_id = ?";
-    $bind_types = "i";
+    $campaign_name = htmlspecialchars($camp_result['name'] ?? 'Unknown');
+    $filter_display_name .= " (Campaign: $campaign_name)";
+    
+    $where_conditions[] = "l.campaign_id = ?";
+    $bind_types .= "i";
     $bind_params[] = $filter_campaign_id;
+    
     $view_query_string = "?campaign_id=" . $filter_campaign_id;
+    $camp_stmt->close();
 }
 
+$where_clause = !empty($where_conditions) ? " WHERE " . implode(" AND ", $where_conditions) : "";
 
 // --- 2. Data Fetching ---
 $sql = "
@@ -44,15 +64,13 @@ $sql = "
 ";
 
 $stmt = $conn->prepare($sql);
-if ($filter_campaign_id > 0) {
+if (!empty($bind_types)) {
     $stmt->bind_param($bind_types, ...$bind_params);
 }
 $stmt->execute();
 $result = $stmt->get_result();
-$stmt->close();
-$conn->close();
 
-// --- 3. Group Leads by Status for Kanban Columns ---
+// --- 3. Group Leads by Status ---
 $leads_by_status = [
     'New' => [],
     'Attempted' => [],
@@ -69,6 +87,8 @@ if ($result) {
         }
     }
 }
+$stmt->close();
+$conn->close();
 ?>
 
 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">

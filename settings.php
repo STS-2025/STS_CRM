@@ -1,22 +1,18 @@
 <?php 
-// settings.php
 
-// 1. Start capturing the output buffer
 ob_start(); 
 
-// 2. Start session and set page title
 session_start();
 $page_title = "Settings";
 
-// 3. Include necessary files and database connection (Assumes db.php is available)
+
 require 'api/db.php'; 
-// include 'includes/auth_check.php';
 
 // --- TAB HANDLING ---
 $current_tab = $_GET['tab'] ?? 'general';
 
 // 4. DEFINE HELPER FUNCTION HERE 
-// Function to generate a form field group
+
 if (!function_exists('generate_setting_input')) {
     function generate_setting_input($id, $label, $type = 'text', $value = '', $placeholder = '', $extra_class = '') {
         return '
@@ -32,7 +28,6 @@ if (!function_exists('generate_setting_input')) {
 
 // --- DATA FETCHING: Fetch all required settings from the database ---
 $current_settings = [];
-// NOTE: For robust fetching, you should include 'system_email_sender' here
 $sql_fetch = "SELECT setting_key, setting_value FROM settings";
 $result_fetch = $conn->query($sql_fetch);
 
@@ -50,14 +45,12 @@ $result_users = $conn->query($sql_users);
 
 if ($result_users) {
     while($row = $result_users->fetch_assoc()) {
-        // Ensure role is lowercase for consistency in JS data attributes
         $row['role'] = strtolower($row['role']); 
         $all_users[] = $row;
     }
     $result_users->free();
 }
 
-// Group users by role for summary display and filter options
 $users_by_role = [];
 foreach ($all_users as $user) {
     $role = ucfirst($user['role']);
@@ -68,7 +61,6 @@ foreach ($all_users as $user) {
     $users_by_role[$role]['users'][] = $user;
 }
 
-// Set default values if not found in DB
 // General
 $company_name = $current_settings['company_name'] ?? 'STS CRM';
 $default_currency = $current_settings['default_currency'] ?? 'INR'; 
@@ -88,13 +80,11 @@ $slack_webhook_url = $current_settings['slack_webhook_url'] ?? '';
 $welcome_email_subject = $current_settings['welcome_email_subject'] ?? 'Welcome to the System!';
 $system_email_sender = $current_settings['system_email_sender'] ?? 'noreply@default.com'; // <--- NEW SENDER VARIABLE
 
-// NOW close the connection after ALL data fetching is done
 if (isset($conn)) {
     $conn->close();
 }
 
 
-// Check for messages (for toast notification)
 $toast_script = '';
 if (isset($_SESSION['error'])) {
     $error_message = json_encode(htmlspecialchars($_SESSION['error']));
@@ -294,7 +284,7 @@ if (isset($_SESSION['message'])) {
                     </div>
                 </div>
                 
-            <?php elseif ($current_tab == 'reports'): // START OF NEW REPORTS TAB ?>
+            <?php elseif ($current_tab == 'reports'):?>
                 <div class="pt-8">
                     <h3 class="text-xl font-semibold text-gray-900">Create New Scheduled Report</h3>
                     <p class="mt-1 text-sm text-gray-500">Design a custom summary report, select recipients, and set the schedule.</p>
@@ -487,159 +477,119 @@ Thank you.</textarea>
 // Inject the toast script if a message is set
 echo $toast_script;
 ?>
-
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         
-        // --- LOGO UPLOAD SCRIPT (Existing Logic) ---
+        // --- LOGO UPLOAD SCRIPT ---
         const fileInput = document.getElementById('logo_upload');
         const changeButton = document.getElementById('changeLogoButton');
         const uploadForm = document.getElementById('logoUploadForm');
         const logoPreviewContainer = document.getElementById('current_logo_preview');
 
         if (fileInput && changeButton && uploadForm) {
-            changeButton.addEventListener('click', function() {
-                fileInput.click();
-            });
-
+            changeButton.addEventListener('click', () => fileInput.click());
             fileInput.addEventListener('change', function(event) {
-                const files = event.target.files;
-                if (files.length > 0) {
-                    const file = files[0];
+                if (this.files && this.files[0]) {
                     const reader = new FileReader();
-
-                    reader.onload = function(e) {
-                        logoPreviewContainer.innerHTML = ''; 
-                        const img = document.createElement('img');
-                        img.src = e.target.result;
-                        img.alt = "New Logo Preview";
-                        img.className = 'h-full w-full object-contain';
-                        logoPreviewContainer.appendChild(img);
-                        
+                    reader.onload = (e) => {
+                        logoPreviewContainer.innerHTML = `<img src="${e.target.result}" alt="Preview" class="h-full w-full object-contain">`;
                         uploadForm.submit();
                     };
-
-                    reader.readAsDataURL(file);
+                    reader.readAsDataURL(this.files[0]);
                 }
             });
         } 
         
-        // --- NEW: REPORTS TAB INTERACTIVITY (Recipients & Summary) ---
+        // --- REPORTS TAB: DYNAMIC LOGIC ---
         const selectAllCheckbox = document.getElementById('select_all_users');
         const roleFilter = document.getElementById('recipient_type_filter');
-        const userTableBody = document.querySelector('#user_list_table tbody');
+        const userRows = document.querySelectorAll('#user_list_table tbody tr[data-user-role]');
         const userCheckboxes = document.querySelectorAll('.user-select-checkbox');
-        
-        // Map roles to summary IDs for easy update
-        const summaryElements = {};
-        userCheckboxes.forEach(checkbox => {
-            const role = checkbox.getAttribute('data-role');
-            summaryElements[role] = document.getElementById(`summary_${role}_count`);
-        });
-
         const totalRecipientsCount = document.getElementById('total_recipients_count');
-        
+
         /**
-         * Updates the recipient summary counts based on which users are currently CHECKED.
+         * Updates all summary counts based on checked boxes.
          */
         function updateRecipientSummary() {
-            let totalCount = 0;
-            const currentRoleCounts = {};
-            
-            // 1. Initialize counts for all known roles
-            for (const role in summaryElements) {
-                currentRoleCounts[role] = 0;
-            }
-            
-            // 2. Iterate over ALL checkboxes (visible or hidden) to get the true count
-            userCheckboxes.forEach(checkbox => {
-                const role = checkbox.getAttribute('data-role');
-                if (checkbox.checked) {
-                    totalCount++;
-                    currentRoleCounts[role]++;
+            let totalChecked = 0;
+            const roleCounts = {};
+
+            // 1. Get all available summary span IDs (dynamic based on what's in the DOM)
+            const summarySpans = document.querySelectorAll('[id^="summary_"][id$="_count"]');
+            summarySpans.forEach(span => {
+                const role = span.id.replace('summary_', '').replace('_count', '');
+                roleCounts[role] = 0; // Initialize
+            });
+
+            // 2. Count checked users
+            userCheckboxes.forEach(cb => {
+                if (cb.checked) {
+                    totalChecked++;
+                    const role = cb.getAttribute('data-role').toLowerCase();
+                    if (roleCounts.hasOwnProperty(role)) {
+                        roleCounts[role]++;
+                    }
                 }
             });
-            
-            // 3. Update counts in the summary section
-            totalRecipientsCount.textContent = totalCount;
-            for (const role in currentRoleCounts) {
-                if (summaryElements[role]) {
-                    summaryElements[role].textContent = currentRoleCounts[role];
-                }
+
+            // 3. Update DOM
+            totalRecipientsCount.textContent = totalChecked;
+            for (const role in roleCounts) {
+                const el = document.getElementById(`summary_${role}_count`);
+                if (el) el.textContent = roleCounts[role];
             }
         }
-        
-        /**
-         * Filters the user list table and handles automatic checkbox selection based on the chosen role.
-         */
-        function filterUserList(selectedRole) {
-            const isAll = selectedRole === 'All';
-            const rows = userTableBody.querySelectorAll('tr');
 
-            // 1. Filter Display & Selection
-            rows.forEach(row => {
-                const rowRole = row.getAttribute('data-user-role');
+        /**
+         * Filters the table and handles auto-selection.
+         */
+        function handleFilter(selectedRole) {
+            const isAll = selectedRole === 'All';
+            const lowerSelectedRole = selectedRole.toLowerCase();
+
+            userRows.forEach(row => {
+                const rowRole = row.getAttribute('data-user-role').toLowerCase();
                 const checkbox = row.querySelector('.user-select-checkbox');
-                
-                // Reset visibility and selection for every row first
-                row.style.display = 'none';
-                if (checkbox) checkbox.checked = false;
 
                 if (isAll) {
-                    // If 'All' is selected, show all rows. Selection remains unchecked by filter.
-                    row.style.display = ''; 
-                } else if (rowRole === selectedRole) {
-                    // If a specific role is selected, show matching rows and CHECK the checkbox.
-                    row.style.display = ''; 
-                    if (checkbox) checkbox.checked = true;
-                } 
+                    row.style.display = ''; // Show all
+                    // We don't auto-select when 'All' is chosen, user does it manually
+                } else if (rowRole === lowerSelectedRole) {
+                    row.style.display = ''; // Show matches
+                    if (checkbox) checkbox.checked = true; // AUTO-SELECT
+                } else {
+                    row.style.display = 'none'; // Hide others
+                    if (checkbox) checkbox.checked = false; // Deselect hidden
+                }
             });
-            
-            // Uncheck the master 'Select All' checkbox whenever the filter changes
-            if (selectAllCheckbox) {
-                selectAllCheckbox.checked = false; 
-            }
-            
-            // 2. Update Summary
+
+            if (selectAllCheckbox) selectAllCheckbox.checked = false;
             updateRecipientSummary();
         }
-        
+
         // --- Event Listeners ---
-        
-        // Listener for the Role Filter (Request: Show list when role is selected)
         if (roleFilter) {
-            roleFilter.addEventListener('change', function() {
-                filterUserList(this.value);
-            });
+            roleFilter.addEventListener('change', (e) => handleFilter(e.target.value));
         }
 
-        // Listener for the global Select All checkbox
         if (selectAllCheckbox) {
             selectAllCheckbox.addEventListener('change', function() {
-                // Only operate on visible rows
-                userTableBody.querySelectorAll('tr').forEach(row => {
+                userRows.forEach(row => {
                     if (row.style.display !== 'none') {
-                        const checkbox = row.querySelector('.user-select-checkbox');
-                        if (checkbox) {
-                            checkbox.checked = selectAllCheckbox.checked;
-                        }
+                        const cb = row.querySelector('.user-select-checkbox');
+                        if (cb) cb.checked = this.checked;
                     }
                 });
                 updateRecipientSummary();
             });
         }
-        
-        // Listener for individual user checkboxes (Request: Update summary)
-        userCheckboxes.forEach(checkbox => {
-            checkbox.addEventListener('change', updateRecipientSummary);
+
+        userCheckboxes.forEach(cb => {
+            cb.addEventListener('change', updateRecipientSummary);
         });
-        
-        // Initialize the filter and summary display on load
-        if (roleFilter) {
-            filterUserList(roleFilter.value); // Initial run to set state based on default 'All'
-        } else {
-            updateRecipientSummary(); // Fallback if not on the reports tab
-        }
+
+        // Initialize on load
+        if (roleFilter) handleFilter(roleFilter.value);
     });
 </script>
 

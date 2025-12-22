@@ -9,15 +9,33 @@ include 'api/db.php';
 
 // --- Fetch data for dropdowns ---
 // 1. Fetch users for the owner dropdown
-$users_result = $conn->query("SELECT id, name FROM users WHERE role != 'admin' ORDER BY name ASC");
+if (!isset($_SESSION['user_id'])) {
+    header("Location: login.php");
+    exit;
+}
+
+$current_user_id = $_SESSION['user_id'];
+$current_user_role = $_SESSION['role'];
+
+// --- 1. Role-Based User Fetching Logic ---
+if ($current_user_role === 'admin') {
+    // Admin-ku ella staff members-um therivaanga
+    $users_result = $conn->query("SELECT id, name FROM users WHERE role != 'admin' ORDER BY name ASC");
+} else {
+    // Staff-ku avanga peyar mattumae dropdown-la varum
+    $stmt = $conn->prepare("SELECT id, name FROM users WHERE id = ?");
+    $stmt->bind_param("i", $current_user_id);
+    $stmt->execute();
+    $users_result = $stmt->get_result();
+}
 $users = $users_result ? $users_result->fetch_all(MYSQLI_ASSOC) : [];
 
 // 2. Fetch Active/Planned Campaigns for source tracking
 $campaigns_result = $conn->query("SELECT id, name FROM campaigns WHERE status IN ('Planned', 'Running') ORDER BY name ASC");
 $campaigns = $campaigns_result ? $campaigns_result->fetch_all(MYSQLI_ASSOC) : [];
 
-// Existing lead sources-ai unique-ah fetch panrom (Autocomplete suggestions-kaga)
-$sources_result = $conn->query("SELECT DISTINCT source FROM leads WHERE source IS NOT NULL AND source != '' ORDER BY source ASC");
+// 3. Fetch existing lead sources for datalist
+$sources_result = $conn->query("SELECT source FROM leads WHERE source IS NOT NULL AND source != '' GROUP BY TRIM(LOWER(source)) ORDER BY source ASC");
 $existing_sources = $sources_result ? $sources_result->fetch_all(MYSQLI_ASSOC) : [];
 
 $conn->close();
@@ -94,9 +112,6 @@ $statuses = ['New', 'Attempted', 'Contacted', 'Qualified', 'Unqualified', 'Conve
                     <?php foreach ($existing_sources as $s): ?>
                         <option value="<?= htmlspecialchars($s['source']) ?>">
                         <?php endforeach; ?>
-                    <option value="Website">
-                    <option value="Referral">
-                    <option value="Social Media">
                 </datalist>
                 <p class="mt-1 text-xs text-gray-400 italic">Start typing to see previous sources or enter a new one.
                 </p>
@@ -106,13 +121,18 @@ $statuses = ['New', 'Attempted', 'Contacted', 'Qualified', 'Unqualified', 'Conve
                 <label for="owner_id" class="text-sm font-medium text-gray-700 block">Assigned Owner</label>
                 <select id="owner_id" name="owner_id" required
                     class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
-                    <option value="">-- Select User --</option>
+                    <?php if ($current_user_role === 'admin'): ?>
+                        <option value="">-- Select Staff --</option>
+                    <?php endif; ?>
                     <?php foreach ($users as $u): ?>
-                        <option value="<?= $u['id'] ?>">
-                            <?= htmlspecialchars($u['name']) ?>
+                        <option value="<?= $u['id'] ?>" <?= ($current_user_role !== 'admin' || $u['id'] == $current_user_id) ? 'selected' : '' ?>>
+                            <?= htmlspecialchars($u['name']) ?> <?= ($u['id'] == $current_user_id) ? '(Me)' : '' ?>
                         </option>
                     <?php endforeach; ?>
                 </select>
+                <?php if ($current_user_role !== 'admin'): ?>
+                    <p class="mt-1 text-xs text-gray-400 italic">Leads you create are automatically assigned to you.</p>
+                <?php endif; ?>
             </div>
         </div>
 

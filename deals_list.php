@@ -1,5 +1,5 @@
 <?php
-// deals_list.php
+// deals_list.php (Role-Based List View)
 
 // 1. Start output buffering and session
 ob_start();
@@ -9,11 +9,30 @@ session_start();
 $page_title = "Deals List View";
 
 // 3. Include necessary files and database connection
-// include 'includes/auth_check.php'; 
 include 'api/db.php';
 
-// --- 4. DATA FETCHING LOGIC ---
-// Fetch all deals, joining with companies and users to get names
+// Auth Check
+if (!isset($_SESSION['user_id'])) {
+    header("Location: login.php");
+    exit;
+}
+
+$current_user_id = $_SESSION['user_id'];
+$current_user_role = $_SESSION['role'];
+
+// --- 4. DATA FETCHING LOGIC (With Role-Based Filter) ---
+
+$where_clause = "";
+$bind_types = "";
+$bind_params = [];
+
+// Admin illaiyendral, owner_id-ai vaitthu filter seiyavum
+if ($current_user_role !== 'admin') {
+    $where_clause = " WHERE d.owner_id = ?";
+    $bind_types = "i";
+    $bind_params[] = $current_user_id;
+}
+
 $sql = "
     SELECT 
         d.id, d.deal_name, d.amount, d.stage, d.close_date, d.created_at,
@@ -22,10 +41,18 @@ $sql = "
     FROM deals d
     LEFT JOIN companies c ON d.company_id = c.id
     LEFT JOIN users u ON d.owner_id = u.id
+    $where_clause
     ORDER BY d.id DESC 
 ";
 
-$result = $conn->query($sql);
+$stmt = $conn->prepare($sql);
+
+if ($current_user_role !== 'admin') {
+    $stmt->bind_param($bind_types, ...$bind_params);
+}
+
+$stmt->execute();
+$result = $stmt->get_result();
 
 $deals = [];
 if ($result) {
@@ -33,6 +60,7 @@ if ($result) {
         $deals[] = $row;
     }
 }
+$stmt->close();
 $conn->close();
 
 /**
@@ -49,21 +77,14 @@ function render_stage_badge($stage)
         'Closed Lost' => 'bg-red-100 text-red-800',
     ];
 
-
     $color_class = $colors[$stage] ?? 'bg-gray-100 text-gray-800';
     return '<span class="px-2 py-1 text-xs font-medium rounded-full ' . $color_class . '">' . htmlspecialchars($stage) . '</span>';
 }
 
-// Check for and store session message (for toast notifications)
-$toast_message = '';
-$toast_type = 'success';
-if (isset($_SESSION['message'])) {
-    $toast_message = $_SESSION['message'];
-    if (str_contains($toast_message, 'Error') || str_contains($toast_message, 'Database Error')) {
-        $toast_type = 'error';
-    }
-    unset($_SESSION['message']);
-}
+// Toast message logic
+$toast_message = $_SESSION['message'] ?? '';
+$toast_type = (isset($_SESSION['message']) && (str_contains($_SESSION['message'], 'Error'))) ? 'error' : 'success';
+unset($_SESSION['message']);
 
 ?>
 
